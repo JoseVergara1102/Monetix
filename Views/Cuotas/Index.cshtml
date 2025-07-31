@@ -1,0 +1,291 @@
+﻿@model List<Monetix.Models.Cuota>
+@{
+    ViewData["Title"] = "Cuotas de Préstamos";
+    int top = ViewBag.Top ?? 10;
+    int contador = 1;
+    int? idPrestamo = ViewBag.IdPrestamo as int?;
+    string estado = ViewBag.EstadoFiltro as string ?? "";
+    var culture = System.Globalization.CultureInfo.CreateSpecificCulture("es-CO");
+    var fechaActual = DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-primary fw-bold">
+            <i class="bi bi-123 me-2"></i> Cuotas de Préstamos
+        </h3>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" class="row gy-2 gx-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Buscar por Nro. Préstamo:</label>
+                    <input type="number" name="idPrestamo" value="@(idPrestamo ?? null)" class="form-control" placeholder="Ej: 101" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Top:</label>
+                    <input type="number" name="top" value="@top" min="1" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Estado:</label>
+                    <select name="estado" class="form-select">
+                        @{
+                            var opciones = new[] { "Todos", "Pendiente", "Pagada" };
+                            foreach (var opcion in opciones)
+                            {
+                                var valor = opcion == "Todos" ? "" : opcion;
+                                var selected = (estado == valor) ? "selected" : "";
+                                @:<option value="@valor" @selected>@opcion</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                    <a href="@Url.Action("Index", "Cuotas")" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i> Recargar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (ViewBag.MensajeError != null)
+    {
+        <div class="alert alert-danger shadow-sm">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@ViewBag.MensajeError
+        </div>
+    }
+    @if (ViewBag.MensajeExito != null)
+    {
+        <div class="alert alert-success shadow-sm">
+            <i class="bi bi-check-circle-fill me-2"></i>@ViewBag.MensajeExito
+        </div>
+    }
+
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle shadow-sm">
+            <thead class="table-dark text-center">
+                <tr>
+                    <th> </th>
+                    <th>ID Cuota</th>
+                    <th>Nro. Préstamo</th>
+                    <th>Monto a Pagar</th>
+                    <th>Monto Debe</th>
+                    <th>Fecha de Vencimiento</th>
+                    <th>Fecha de Pago</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="text-center">
+                @foreach (var c in Model)
+                {
+                    <tr>
+                        <td>@contador</td>
+                        <td>@c.IdCuota</td>
+                        <td class="fw-bold">@c.IdPrestamo</td>
+                        <td>@c.MontoAPagar?.ToString("C0", culture)</td>
+                        <td>@c.MontoDebe?.ToString("C0", culture)</td>
+                        <td>@c.FechaVenceCuota?.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            @if (c.FechaPagoCuota.HasValue)
+                            {
+                                <span class="text-success fw-semibold">@c.FechaPagoCuota.Value.ToString("dd/MM/yyyy")</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Pendiente</span>
+                            }
+                        </td>
+                        <td>
+                            @if (c.Estado == true)
+                            {
+                                <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Pagada</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark"><i class="bi bi-clock-history"></i> Pendiente</span>
+                            }
+                        </td>
+                        <td>
+                            @if (!c.Estado.GetValueOrDefault())
+                            {
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                                        <i class="bi bi-wallet2 me-1"></i> Pagar
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a href="#" class="dropdown-item text-success" data-bs-toggle="modal" data-bs-target="#pagoModal"
+                                               data-idcuota="@c.IdCuota" data-monto="@c.MontoDebe">
+                                                <i class="bi bi-cash-coin me-1"></i> Pago Total
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="#" class="dropdown-item text-primary" data-bs-toggle="modal" data-bs-target="#abonoModal"
+                                               data-idcuota="@c.IdCuota" data-monto="@c.MontoDebe">
+                                                <i class="bi bi-cash me-1"></i> Abonar
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            }
+                        </td>
+                    </tr>
+                    contador++;
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Pago Total -->
+<div class="modal fade" id="pagoModal" tabindex="-1" aria-labelledby="pagoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-cash-coin me-2"></i> Registrar Pago Total</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form asp-action="Create" asp-controller="Pagos" method="post">
+                <div class="modal-body">
+                    <input type="hidden" id="IdCuota" name="IdCuota" />
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Monto a Pagar</label>
+                        <input type="text" id="MontoVisual" class="form-control" readonly />
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input class="form-check-input" type="checkbox" id="pagoTotalCheck" />
+                        <label class="form-check-label" for="pagoTotalCheck">Pago total</label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Monto Pagado</label>
+                        <input type="number" name="MontoPagado" id="MontoPagado" class="form-control" step="any" required placeholder="Ingrese el monto pagado" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Medio de Pago</label>
+                        <select name="MedioPago" class="form-select" required>
+                            <option selected disabled value="">Seleccione...</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Nequi">Nequi</option>
+                            <option value="Efectivo">Efectivo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i> Registrar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal Abono -->
+<div class="modal fade" id="abonoModal" tabindex="-1" aria-labelledby="abonoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-cash me-2"></i> Registrar Abono</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form asp-action="Create" asp-controller="Pagos" method="post">
+                <div class="modal-body">
+                    <input type="hidden" id="IdCuotaAbono" name="IdCuota" />
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Monto Pendiente</label>
+                        <input type="text" id="MontoVisualAbono" class="form-control" readonly />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Monto a Abonar</label>
+                        <input type="number" name="MontoPagado" id="MontoPagadoAbono" class="form-control" step="any" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Medio de Pago</label>
+                        <select name="MedioPago" class="form-select" required>
+                            <option value="">-- Seleccione --</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Nequi">Nequi</option>
+                            <option value="Efectivo">Efectivo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i> Registrar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Modal de Pago Total
+        const pagoModal = document.getElementById('pagoModal');
+        pagoModal?.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const idCuota = button.getAttribute('data-idcuota');
+            const monto = parseFloat(button.getAttribute('data-monto') || 0);
+
+            document.getElementById('IdCuota').value = idCuota;
+            document.getElementById('MontoVisual').value = monto.toLocaleString('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+
+            // Limpia el campo del monto pagado
+            document.getElementById('MontoPagado').value = '';
+
+            // Desmarca la casilla por defecto
+            document.getElementById('pagoTotalCheck').checked = false;
+
+            // Guarda el monto total en data-monto para usarlo al marcar el checkbox
+            document.getElementById('MontoPagado').setAttribute('data-monto', monto);
+        });
+
+        // Evento cuando se selecciona el checkbox de pago total
+        document.getElementById('pagoTotalCheck')?.addEventListener('change', function () {
+            const monto = document.getElementById('MontoPagado')?.getAttribute('data-monto') || 0;
+            if (this.checked) {
+                // Sin decimales
+                document.getElementById('MontoPagado').value = parseInt(monto);
+            } else {
+                document.getElementById('MontoPagado').value = '';
+            }
+        });
+
+        // Modal de Abono
+        const abonoModal = document.getElementById('abonoModal');
+        abonoModal?.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const idCuota = button.getAttribute('data-idcuota');
+            const monto = parseFloat(button.getAttribute('data-monto') || 0);
+
+            document.getElementById('IdCuotaAbono').value = idCuota;
+            document.getElementById('MontoVisualAbono').value = monto.toLocaleString('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+
+            // Limpia el campo del monto abono
+            document.getElementById('MontoPagadoAbono').value = '';
+        });
+    </script>
+}

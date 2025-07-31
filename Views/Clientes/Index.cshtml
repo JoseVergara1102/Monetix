@@ -1,0 +1,268 @@
+﻿@model List<Monetix.Models.Cliente>
+@{
+    ViewData["Title"] = "Gestión de Clientes";
+    var busqueda = ViewBag.Busqueda as string ?? "";
+    int top = ViewBag.Top ?? 10;
+    int contador = 1;
+    var abrirModal = ViewBag.AbrirModal as string;
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-primary fw-bold">
+            <i class="bi bi-people-fill me-2"></i> Gestión de Clientes
+        </h3>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" class="row gy-2 gx-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Buscar por nombre completo:</label>
+                    <input type="text" name="busqueda" value="@busqueda" class="form-control" placeholder="Ej: Juan Pérez" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Top:</label>
+                    <input type="number" name="top" value="@top" min="1" class="form-control" />
+                </div>
+                <div class="col-md-6 text-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                    <a href="@Url.Action("Index", "Clientes")" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-clockwise"></i> Recargar
+                    </a>
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#crearModal">
+                        <i class="bi bi-plus-circle"></i> Nuevo Cliente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    @if (ViewBag.MensajeError != null)
+    {
+        <div class="alert alert-danger shadow-sm">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@ViewBag.MensajeError
+        </div>
+    }
+    @if (ViewBag.MensajeExito != null)
+    {
+        <div class="alert alert-success shadow-sm">
+            <i class="bi bi-check-circle-fill me-2"></i>@ViewBag.MensajeExito
+        </div>
+    }
+
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle shadow-sm">
+            <thead class="table-dark text-center">
+                <tr>
+                    <th> </th>
+                    <th>Nombre Completo</th>
+                    <th>Teléfono</th>
+                    <th>Email</th>
+                    <th>Dirección</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="text-center">
+                @foreach (var c in Model)
+                {
+                    <tr>
+                        <td>@contador</td>
+                        <td class="fw-semibold">@($"{c.PrimerNom} {c.SegundoNom} {c.PrimerApe} {c.SegundoApe}")</td>
+                        <td>@c.Telefono</td>
+                        <td>@c.Email</td>
+                        <td>@($"{c.Direccion}, {c.Barrio}")</td>
+                        <td>
+                            @if (c.Estado == true)
+                            {
+                                <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary"><i class="bi bi-x-circle-fill"></i> Inactivo</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="d-flex justify-content-center gap-2">
+                                @if (c.Estado == true)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-primary" title="Editar"
+                                            onclick='editarCliente(@Html.Raw(Json.Serialize(c)))'>
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+
+                                    <form asp-action="Desactivar" method="post">
+                                        <input type="hidden" name="id" value="@c.IdCliente" />
+                                        <input type="hidden" name="top" value="@top" />
+                                        <input type="hidden" name="busqueda" value="@busqueda" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Desactivar" onclick="return confirm('¿Desea desactivar este cliente?')">
+                                            <i class="bi bi-person-x"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-action="Activar" method="post">
+                                        <input type="hidden" name="id" value="@c.IdCliente" />
+                                        <input type="hidden" name="top" value="@top" />
+                                        <input type="hidden" name="busqueda" value="@busqueda" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Activar" onclick="return confirm('¿Desea activar este cliente?')">
+                                            <i class="bi bi-person-check"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                    contador++;
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Crear Cliente -->
+<div class="modal fade @(abrirModal == "true" ? "show d-block" : "")" id="crearModal" tabindex="-1" aria-labelledby="crearModalLabel" aria-hidden="true" style="@(abrirModal == "true" ? "display: block;" : "")">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content shadow-lg border-0">
+            <form asp-action="Create" method="post">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i> Registrar Nuevo Cliente</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Primer Nombre</label>
+                            <input type="text" name="PrimerNom" required class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Segundo Nombre</label>
+                            <input type="text" name="SegundoNom" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Primer Apellido</label>
+                            <input type="text" name="PrimerApe" required class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Segundo Apellido</label>
+                            <input type="text" name="SegundoApe" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Teléfono</label>
+                            <input type="number" name="Telefono" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Correo Electrónico</label>
+                            <input type="email" name="Email" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Dirección</label>
+                            <input type="text" name="Direccion" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Barrio</label>
+                            <input type="text" name="Barrio" class="form-control" />
+                        </div>
+                    </div>
+                    <input type="hidden" name="top" value="@top" />
+                    <input type="hidden" name="busqueda" value="@busqueda" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Guardar Cliente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Cliente -->
+<div class="modal fade" id="editarModal" tabindex="-1" aria-labelledby="editarModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content shadow-lg border-0">
+            <form asp-action="Edit" method="post">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i> Editar Cliente</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="IdCliente" id="edit-idCliente" />
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Primer Nombre</label>
+                            <input type="text" name="PrimerNom" id="edit-primerNom" class="form-control" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Segundo Nombre</label>
+                            <input type="text" name="SegundoNom" id="edit-segundoNom" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Primer Apellido</label>
+                            <input type="text" name="PrimerApe" id="edit-primerApe" class="form-control" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Segundo Apellido</label>
+                            <input type="text" name="SegundoApe" id="edit-segundoApe" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Teléfono</label>
+                            <input type="number" name="Telefono" id="edit-telefono" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Correo Electrónico</label>
+                            <input type="email" name="Email" id="edit-email" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Dirección</label>
+                            <input type="text" name="Direccion" id="edit-direccion" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Barrio</label>
+                            <input type="text" name="Barrio" id="edit-barrio" class="form-control" />
+                        </div>
+                    </div>
+                    <input type="hidden" name="top" value="@top" />
+                    <input type="hidden" name="busqueda" value="@busqueda" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function editarCliente(cliente) {
+            document.getElementById("edit-idCliente").value = cliente.idCliente;
+            document.getElementById("edit-primerNom").value = cliente.primerNom;
+            document.getElementById("edit-segundoNom").value = cliente.segundoNom;
+            document.getElementById("edit-primerApe").value = cliente.primerApe;
+            document.getElementById("edit-segundoApe").value = cliente.segundoApe;
+            document.getElementById("edit-telefono").value = cliente.telefono;
+            document.getElementById("edit-email").value = cliente.email;
+            document.getElementById("edit-direccion").value = cliente.direccion;
+            document.getElementById("edit-barrio").value = cliente.barrio;
+
+            new bootstrap.Modal(document.getElementById("editarModal")).show();
+        }
+
+        $(function () {
+            const abrirModal = '@(ViewBag.AbrirModal ?? "false")';
+            if (abrirModal === "true") {
+                new bootstrap.Modal(document.getElementById('crearModal')).show();
+            }
+        });
+    </script>
+}

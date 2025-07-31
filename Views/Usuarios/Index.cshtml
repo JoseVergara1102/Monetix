@@ -1,0 +1,200 @@
+﻿@model List<Monetix.Models.Usuario>
+@{
+    ViewData["Title"] = "Gestión de Usuarios";
+    var busqueda = ViewBag.Busqueda as string ?? "";
+    int top = ViewBag.Top ?? 10;
+    var abrirModal = ViewBag.AbrirModal as string;
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-primary fw-bold">
+            <i class="bi bi-person-badge-fill me-2"></i> Gestión de Usuarios
+        </h3>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" class="row gy-2 gx-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Buscar usuario:</label>
+                    <input type="text" name="busqueda" value="@busqueda" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Top:</label>
+                    <input type="number" name="top" value="@top" min="1" class="form-control" />
+                </div>
+                <div class="col-md-6 text-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                    <a href="@Url.Action("Index", "Usuarios")" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i> Recargar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (ViewBag.MensajeError != null)
+    {
+        <div class="alert alert-danger shadow-sm">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@ViewBag.MensajeError
+        </div>
+    }
+    @if (ViewBag.MensajeExito != null)
+    {
+        <div class="alert alert-success shadow-sm">
+            <i class="bi bi-check-circle-fill me-2"></i>@ViewBag.MensajeExito
+        </div>
+    }
+
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle shadow-sm">
+            <thead class="table-dark text-center">
+                <tr>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="text-center">
+                @foreach (var u in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">@u.UsuarioNombre</td>
+                        <td>@u.Rol?.Nombre</td>
+                        <td>
+                            @if (u.Estado)
+                            {
+                                <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary"><i class="bi bi-x-circle-fill"></i> Inactivo</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="d-flex justify-content-center gap-2">
+                                @if (u.Estado)
+                                {
+                                    <button class="btn btn-sm btn-outline-primary" title="Editar Usuario"
+                                            onclick='editarUsuario(@Html.Raw(Json.Serialize(u)))'>
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+
+                                    <button class="btn btn-sm btn-outline-warning" title="Restablecer Contraseña"
+                                            onclick='reestablecerContrasena(@Html.Raw(Json.Serialize(u)))'>
+                                        <i class="bi bi-key-fill"></i>
+                                    </button>
+
+                                    <form asp-action="Desactivar" method="post">
+                                        <input type="hidden" name="id" value="@u.IdUsuario" />
+                                        <input type="hidden" name="top" value="@top" />
+                                        <input type="hidden" name="busqueda" value="@busqueda" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Desea desactivar este usuario?')">
+                                            <i class="bi bi-person-x"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-action="Activar" method="post">
+                                        <input type="hidden" name="id" value="@u.IdUsuario" />
+                                        <input type="hidden" name="top" value="@top" />
+                                        <input type="hidden" name="busqueda" value="@busqueda" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success" onclick="return confirm('¿Desea activar este usuario?')">
+                                            <i class="bi bi-person-check"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Editar Usuario (Nombre y Rol) -->
+<div class="modal fade" id="modalEditarUsuario" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0">
+            <form method="post" asp-action="Edit">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i> Editar Usuario</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit_idUsuario" name="idUsuario" />
+                    <div class="mb-3">
+                        <label for="edit_usuarioNombre" class="form-label">Usuario</label>
+                        <input type="text" id="edit_usuarioNombre" name="usuarioNombre" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_idRol" class="form-label">Rol</label>
+                        <select name="idRol" id="edit_idRol" class="form-select" required>
+                            <option selected disabled value="">Seleccione...</option>
+                            @foreach (var rol in ViewBag.Roles as List<Monetix.Models.Rol>)
+                            {
+                                <option value="@rol.IdRol">@rol.Nombre</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <input type="hidden" name="top" value="@top" />
+                    <input type="hidden" name="busqueda" value="@busqueda" />
+                    <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> Guardar</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Restablecer Contraseña -->
+<div class="modal fade" id="modalReestablecer" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0">
+            <form method="post" asp-action="ResetPassword">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title"><i class="bi bi-key-fill me-2"></i> Restablecer Contraseña</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="pass_idUsuario" name="idUsuario" />
+                    <div class="mb-3">
+                        <label for="nuevaContrasena" class="form-label">Nueva Contraseña</label>
+                        <input type="password" id="nuevaContrasena" name="nuevaContrasena" class="form-control" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <input type="hidden" name="top" value="@top" />
+                    <input type="hidden" name="busqueda" value="@busqueda" />
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-key"></i> Reestablecer</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function editarUsuario(usuario) {
+            document.getElementById('edit_idUsuario').value = usuario.idUsuario;
+            document.getElementById('edit_usuarioNombre').value = usuario.usuarioNombre;
+            document.getElementById('edit_idRol').value = usuario.idRol;
+            new bootstrap.Modal(document.getElementById("modalEditarUsuario")).show();
+        }
+
+        function reestablecerContrasena(usuario) {
+            document.getElementById('pass_idUsuario').value = usuario.idUsuario;
+            document.getElementById('nuevaContrasena').value = '';
+            new bootstrap.Modal(document.getElementById("modalReestablecer")).show();
+        }
+    </script>
+}

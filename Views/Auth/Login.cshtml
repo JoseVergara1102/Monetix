@@ -1,0 +1,129 @@
+﻿@{
+    ViewData["Title"] = "Iniciar sesión";
+    ViewData["OcultarHeaderFooter"] = true; // Oculta header/footer desde Layout
+}
+
+<style>
+    body {
+        background: url('/img/fondologin.jpg') no-repeat center center fixed;
+        background-size: cover;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card {
+        backdrop-filter: blur(8px); /* efecto vidrio */
+        background-color: rgba(255, 255, 255, 0.85);
+        border-radius: 1rem;
+    }
+</style>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow border-0">
+                <div class="card-header bg-dark text-white text-center rounded-top">
+                    <h4 class="mb-0">
+                        <i class="bi bi-person-lock me-2"></i> Acceso a Monetix
+                    </h4>
+                </div>
+                <div class="card-body bg-light">
+
+                    @if (ViewBag.MensajeExito != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show text-center" role="alert">
+                            @ViewBag.MensajeExito
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show text-center" role="alert">
+                            @ViewBag.Error
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form asp-action="Login" method="post" novalidate>
+                        <div class="mb-3">
+                            <label for="usuario" class="form-label">Usuario</label>
+                            <input type="text" class="form-control" id="usuario" name="usuario" placeholder="Ingrese su usuario" required autocomplete="username" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="pass" class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="pass" name="pass" placeholder="Ingrese su contraseña" required autocomplete="current-password" />
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-dark">
+                                <i class="bi bi-box-arrow-in-right me-1"></i> Ingresar
+                            </button>
+                            <button type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalRegistro">
+                                <i class="bi bi-person-plus me-1"></i> Registrarse
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL REGISTRO DE USUARIO -->
+<div class="modal fade" id="modalRegistro" tabindex="-1" aria-labelledby="modalRegistroLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow border-0">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="modalRegistroLabel">
+                    <i class="bi bi-person-plus-fill me-2"></i> Crear cuenta
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form asp-action="Register" method="post" novalidate>
+                <div class="modal-body bg-light">
+                    <div class="mb-3">
+                        <label for="UsuarioNombre" class="form-label">Nombre de usuario</label>
+                        <input type="text" class="form-control" id="UsuarioNombre" name="UsuarioNombre" placeholder="Ingrese nombre de usuario" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="Contrasena" class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" id="Contrasena" name="Contrasena" placeholder="Ingrese una contraseña" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="idRol" class="form-label">Rol</label>
+                        <select class="form-select" id="idRol" name="idRol" required>
+                            <option selected disabled value="">Seleccione...</option>
+                            @if (ViewBag.Roles != null)
+                            {
+                                foreach (var rol in ViewBag.Roles)
+                                {
+                                    <option value="@rol.IdRol">@rol.Nombre</option>
+                                }
+                            }
+                            else
+                            {
+                                <option disabled>No hay roles disponibles</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-dark">
+                        <i class="bi bi-check-circle me-1"></i> Registrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

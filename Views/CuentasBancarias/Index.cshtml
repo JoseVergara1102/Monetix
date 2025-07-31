@@ -1,0 +1,266 @@
+﻿@model List<Monetix.Models.CuentaBancaria>
+@using Monetix.Models
+@{
+    ViewData["Title"] = "Gestión de Cuentas Bancarias";
+    var busqueda = ViewBag.Busqueda as string ?? "";
+    int top = ViewBag.Top ?? 10;
+    int contador = 1;
+    var abrirModal = ViewBag.AbrirModal as string;
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-primary fw-bold">
+            <i class="bi bi-credit-card-2-front me-2"></i> Gestión de Cuentas Bancarias
+        </h3>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" class="row gy-2 gx-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Buscar por número o banco:</label>
+                    <input type="text" name="busqueda" value="@busqueda" class="form-control" placeholder="Ej: 123456, Davivienda" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Top:</label>
+                    <input type="number" name="top" value="@top" min="1" class="form-control" />
+                </div>
+                <div class="col-md-6 text-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                    <a href="@Url.Action("Index", "CuentasBancarias")" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-clockwise"></i> Recargar
+                    </a>
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#crearModal">
+                        <i class="bi bi-plus-circle"></i> Nueva Cuenta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (ViewBag.MensajeError != null)
+    {
+        <div class="alert alert-danger shadow-sm">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@ViewBag.MensajeError
+        </div>
+    }
+    @if (ViewBag.MensajeExito != null)
+    {
+        <div class="alert alert-success shadow-sm">
+            <i class="bi bi-check-circle-fill me-2"></i>@ViewBag.MensajeExito
+        </div>
+    }
+
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle shadow-sm">
+            <thead class="table-dark text-center">
+                <tr>
+                    <th> </th>
+                    <th>Número</th>
+                    <th>Tipo</th>
+                    <th>Banco</th>
+                    <th>Cliente</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="text-center">
+                @foreach (var c in Model)
+                {
+                    <tr>
+                        <td>@contador</td>
+                        <td class="fw-semibold">@c.NumCuenta</td>
+                        <td>@c.TipoCuenta</td>
+                        <td>@c.Banco?.Nombre</td>
+                        <td>
+                            @if (c.Cliente != null)
+                            {
+                                @($"{c.Cliente.PrimerNom} {c.Cliente.SegundoNom} {c.Cliente.PrimerApe} {c.Cliente.SegundoApe}")
+                            }
+                        </td>
+                        <td>
+                            @if (c.Estado == true)
+                            {
+                                <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Activa</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary"><i class="bi bi-x-circle-fill"></i> Inactiva</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="d-flex justify-content-center gap-2">
+                                @if (c.Estado == true)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-primary" title="Editar"
+                                            onclick='editarCuenta(@Html.Raw(Json.Serialize(c)))'>
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <form asp-action="Desactivar" method="post">
+                                        <input type="hidden" name="id" value="@c.IdCuenta" />
+                                        <input type="hidden" name="top" value="@top" />
+                                        <input type="hidden" name="busqueda" value="@busqueda" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Desactivar" onclick="return confirm('¿Desea desactivar esta cuenta?')">
+                                            <i class="bi bi-toggle-off"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-action="Activar" method="post">
+                                        <input type="hidden" name="id" value="@c.IdCuenta" />
+                                        <input type="hidden" name="top" value="@top" />
+                                        <input type="hidden" name="busqueda" value="@busqueda" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Activar" onclick="return confirm('¿Desea activar esta cuenta?')">
+                                            <i class="bi bi-toggle-on"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                    contador++;
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Crear -->
+<div class="modal fade @(abrirModal == "true" ? "show d-block" : "")" id="crearModal" tabindex="-1" aria-labelledby="crearModalLabel" aria-hidden="true" style="@(abrirModal == "true" ? "display: block;" : "")">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0">
+            <form asp-action="Create" method="post">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-credit-card-2-front me-2"></i> Registrar Nueva Cuenta</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Número de Cuenta</label>
+                        <input type="text" name="NumCuenta" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Cuenta</label>
+                        <select name="TipoCuenta" class="form-select" required>
+                            <option selected disabled value="">Seleccione...</option>
+                            <option value="Cuenta de Ahorros">Cuenta de Ahorros</option>
+                            <option value="Cuenta Corriente">Cuenta Corriente</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Banco</label>
+                        <select name="IdBanco" class="form-select" required>
+                            <option selected disabled value="">Seleccione...</option>
+                            @foreach (var banco in ViewBag.Bancos as List<Banco>)
+                            {
+                                <option value="@banco.IdBanco">@banco.Nombre</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cliente</label>
+                        <select name="IdCliente" class="form-select" required>
+                            <option value="" disabled selected>Seleccione...</option>
+                            @foreach (var cliente in ViewBag.Clientes)
+                            {
+                                <option value="@cliente.IdCliente">
+                                    @($"{cliente.PrimerNom} {cliente.SegundoNom} {cliente.PrimerApe} {cliente.SegundoApe}")
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <input type="hidden" name="top" value="@top" />
+                    <input type="hidden" name="busqueda" value="@busqueda" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Guardar Cuenta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar -->
+<div class="modal fade" id="editarModal" tabindex="-1" aria-labelledby="editarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0">
+            <form asp-action="Edit" method="post">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i> Editar Cuenta</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="IdCuenta" id="edit-idCuenta" />
+                    <div class="mb-3">
+                        <label class="form-label">Número de Cuenta</label>
+                        <input type="text" name="NumCuenta" id="edit-numero" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Cuenta</label>
+                        <select name="TipoCuenta" id="edit-tipo" class="form-select" required>
+                            <option selected disabled value="">Seleccione...</option>
+                            <option value="Cuenta de Ahorros">Cuenta de Ahorros</option>
+                            <option value="Cuenta Corriente">Cuenta Corriente</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Banco</label>
+                        <select name="IdBanco" id="edit-banco" class="form-select" required>
+                            <option selected disabled value="">Seleccione...</option>
+                            @foreach (var banco in ViewBag.Bancos as List<Banco>)
+                            {
+                                <option value="@banco.IdBanco">@banco.Nombre</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cliente</label>
+                        <select name="IdCliente" id="edit-cliente" class="form-select" required>
+                            @foreach (var cliente in ViewBag.Clientes)
+                            {
+                                <option value="@cliente.IdCliente">
+                                    @($"{cliente.PrimerNom} {cliente.SegundoNom} {cliente.PrimerApe} {cliente.SegundoApe}")
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <input type="hidden" name="top" value="@top" />
+                    <input type="hidden" name="busqueda" value="@busqueda" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function editarCuenta(cuenta) {
+            document.getElementById("edit-idCuenta").value = cuenta.idCuenta;
+            document.getElementById("edit-numero").value = cuenta.numCuenta;
+            document.getElementById("edit-tipo").value = cuenta.tipoCuenta;
+            document.getElementById("edit-banco").value = cuenta.idBanco;
+            document.getElementById("edit-cliente").value = cuenta.idCliente;
+            new bootstrap.Modal(document.getElementById("editarModal")).show();
+        }
+
+        $(function () {
+            const abrirModal = '@(ViewBag.AbrirModal ?? "false")';
+            if (abrirModal === "true") {
+                new bootstrap.Modal(document.getElementById('crearModal')).show();
+            }
+        });
+    </script>
+}

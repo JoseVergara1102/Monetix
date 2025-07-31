@@ -1,0 +1,69 @@
+﻿@{
+    ViewData["Title"] = "Panel Principal";
+}
+
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="fw-bold text-dark">
+            <i class="bi bi-house-door-fill text-primary me-2"></i> Bienvenido a <span class="text-primary">Monetix</span>
+        </h1>
+        <p class="text-muted fs-5">Panel de control contable y gestión de préstamos</p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+        <div class="col-sm-6 col-lg-4 col-xl-3">
+            <div class="card shadow-sm border-0 h-100 hover-scale">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-person-lines-fill text-primary display-4 mb-3"></i>
+                    <h5 class="fw-semibold">Clientes</h5>
+                    <p class="text-muted small">Gestione los clientes registrados.</p>
+                    <a href="@Url.Action("Index", "Clientes")" class="btn btn-sm btn-outline-primary">Ir al módulo</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-4 col-xl-3">
+            <div class="card shadow-sm border-0 h-100 hover-scale">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-bank text-success display-4 mb-3"></i>
+                    <h5 class="fw-semibold">Cuentas Bancarias</h5>
+                    <p class="text-muted small">Administre las cuentas de sus clientes.</p>
+                    <a href="@Url.Action("Index", "CuentasBancarias")" class="btn btn-sm btn-outline-success">Ir al módulo</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-4 col-xl-3">
+            <div class="card shadow-sm border-0 h-100 hover-scale">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-cash-stack text-warning display-4 mb-3"></i>
+                    <h5 class="fw-semibold">Préstamos</h5>
+                    <p class="text-muted small">Revise y gestione préstamos activos.</p>
+                    <a href="@Url.Action("Index", "Prestamos")" class="btn btn-sm btn-outline-warning">Ir al módulo</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-4 col-xl-3">
+            <div class="card shadow-sm border-0 h-100 hover-scale">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-calendar-range text-info display-4 mb-3"></i>
+                    <h5 class="fw-semibold">Periodos</h5>
+                    <p class="text-muted small">Controle los periodos contables.</p>
+                    <a href="@Url.Action("Index", "Periodos")" class="btn btn-sm btn-outline-info">Ir al módulo</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-scale {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .hover-scale:hover {
+            transform: translateY(-5px) scale(1.03);
+            box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.1);
+        }
+</style>
