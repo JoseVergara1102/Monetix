@@ -1,0 +1,263 @@
+﻿@model List<Monetix.Models.Salida>
+@using Monetix.Models
+@{
+    ViewData["Title"] = "Gestión de Salidas";
+    var articulos = ViewBag.Articulos as List<Articulo>;
+    var clientes = ViewBag.Clientes as List<ClienteBeer>;
+    string busqueda = ViewBag.Busqueda as string ?? "";
+    int top = ViewBag.Top ?? 10;
+    int contador = 1;
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-primary fw-bold">
+            <i class="bi bi-box-arrow-up me-2"></i> Gestión de Salidas
+        </h3>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (ViewBag.MensajeExito != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @ViewBag.MensajeExito
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    else if (ViewBag.MensajeError != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-x-circle-fill me-2"></i> @ViewBag.MensajeError
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row gy-2 gx-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Buscar artículo:</label>
+                    <input type="text" name="busqueda" value="@busqueda" class="form-control" placeholder="Ej: Costeñita" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Top:</label>
+                    <input type="number" name="top" value="@top" class="form-control" min="1" />
+                </div>
+                <div class="col-md-6 text-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-clockwise"></i> Recargar
+                    </a>
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#crearModal">
+                        <i class="bi bi-plus-circle"></i> Nueva Salida
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info text-center">No hay Salidas registradas.</div>
+}
+else
+{
+    <div class="table-responsive shadow-sm">
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-dark">
+                <tr class="text-center">
+                    <th> </th>
+                    <th>NumSalida</th>
+                    <th>Artículo</th>
+                    <th>Cliente</th>
+                    <th>Cantidad</th>
+                    <th>Medida</th>
+                    <th>Cantidad Unidades</th>
+                    <th>Cantidad A Pagar</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@contador</td>
+                        <td class="text-center">@item.IdSalida</td>
+                        <td class="text-center">@item.Articulo?.Descripcion</td>
+                        <td class="text-center">
+                            @(item.Cliente != null
+                                                ? $"{item.Cliente.PrimerNom} {item.Cliente.SegundoNom} {item.Cliente.PrimerApe} {item.Cliente.SegundoApe}"
+                                                : "N/A")
+                </td>
+                <td class="text-center">@item.Cantidad</td>
+                <td class="text-center">@item.Medida</td>
+                <td class="text-center">@item.CantidadUnidades</td>
+                <td class="text-center">@String.Format("{0:C0}", @item.MontoAPagar)</td>
+                <td class="text-center">
+                    @if (item.Estado == false)
+                            {
+                                <span class="badge bg-warning">
+                                    <i class="bi bi-exclamation-circle-fill"></i> Pendiente
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle-fill"></i> Pagado
+                                </span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            @if (item.Estado == false)
+                            {
+                                <form asp-action="AddOne" asp-route-id="@item.IdSalida" method="post" style="display:inline;"
+                                      onsubmit="return confirm('¿Desea añadir +1 a esta salida?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary" title="Agregar +1">
+                                        <i class="bi bi-plus-circle"></i> +1
+                                    </button>
+                                </form>
+                                <form asp-action="PagarSalida" method="post" asp-route-id="@item.IdSalida" onsubmit="return confirm('¿Está seguro que desea registrar el pago?');" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-cash-coin"></i> Pagar
+                                    </button>
+                                </form>
+                                <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#abonoModal" data-id="@item.IdSalida">
+                                    <i class="bi bi-cash-stack"></i> Abonar
+                                </button>
+                            }
+                            else
+                            {
+                                <span class="text-success">
+                                    <i class="bi bi-check-circle-fill"></i> Pagado
+                                </span>
+                            }
+                        </td>
+                    </tr>
+                    contador++;
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<!-- Modal Crear Salida -->
+<div class="modal fade" id="crearModal" tabindex="-1" aria-labelledby="crearModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0">
+            <form asp-action="Create" method="post">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-box-arrow-up"></i> Nueva Salida</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Artículo</label>
+                        <select class="form-select" name="IdArticulo" required>
+                            <option value="">Seleccione un artículo</option>
+                            @foreach (var a in articulos)
+                            {
+                                <option value="@a.IdArticulo">@a.Descripcion</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cliente</label>
+                        <select class="form-select" name="IdCliente" required>
+                            <option value="">Seleccione un cliente</option>
+                            @foreach (var c in clientes)
+                            {
+                                <option value="@c.IdCliente">@($"{c.PrimerNom} {c.SegundoNom} {c.PrimerApe} {c.SegundoApe}")</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cantidad</label>
+                        <input type="number" name="Cantidad" id="cantidad" class="form-control" required min="1" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Medida</label>
+                        <select class="form-select" name="Medida" id="medida" required>
+                            <option selected disabled value="">Seleccione...</option>
+                            <option value="Unidad">Unidad</option>
+                            <option value="PorCajas">Por Cajas</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="cantidadUnidades" name="CantidadUnidades" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Abonar -->
+<div class="modal fade" id="abonoModal" tabindex="-1" aria-labelledby="abonoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0">
+            <form asp-action="Abonar" method="post">
+                <div class="modal-header bg-warning text-white">
+                    <h5 class="modal-title"><i class="bi bi-cash-stack"></i> Registrar Abono</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="IdSalida" id="abonoIdSalida" />
+                    <div class="mb-3">
+                        <label class="form-label">Cantidad a abonar</label>
+                        <input type="number" class="form-control" name="CantidadAbono" min="1" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-cash-stack"></i> Registrar Abono
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById("medida").addEventListener("change", calcularUnidades);
+        document.getElementById("cantidad").addEventListener("input", calcularUnidades);
+
+        function calcularUnidades() {
+            const cantidad = parseInt(document.getElementById("cantidad").value) || 0;
+            const medida = document.getElementById("medida").value;
+            const inputUnidades = document.getElementById("cantidadUnidades");
+
+            inputUnidades.value = medida === "PorCajas" ? cantidad * 38 : cantidad;
+        }
+
+        document.querySelectorAll('[data-bs-target="#abonoModal"]').forEach(button => {
+            button.addEventListener('click', function () {
+                const salidaId = this.getAttribute('data-id');
+                document.getElementById('abonoIdSalida').value = salidaId;
+            });
+        });
+    </script>
+}

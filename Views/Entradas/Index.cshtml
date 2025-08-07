@@ -1,0 +1,212 @@
+﻿@model List<Monetix.Models.Entrada>
+
+@{
+    ViewData["Title"] = "Gestión de Entradas";
+    var busqueda = ViewBag.Busqueda as string ?? "";
+    int top = ViewBag.Top ?? 10;
+    var articulos = ViewBag.Articulos as List<Monetix.Models.Articulo>;
+    int contador = 1;
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-primary fw-bold">
+            <i class="bi bi-box-arrow-in-down me-2"></i> Gestión de Entradas
+        </h3>
+    </div>
+
+    @if (ViewBag.MensajeExito != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @ViewBag.MensajeExito
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    else if (ViewBag.MensajeError != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-x-circle-fill me-2"></i> @ViewBag.MensajeError
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row gy-2 gx-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Buscar artículo:</label>
+                    <input type="text" name="busqueda" value="@busqueda" class="form-control" placeholder="Ej: Costeñita" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Top:</label>
+                    <input type="number" name="top" value="@top" class="form-control" min="1" />
+                </div>
+                <div class="col-md-6 text-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-clockwise"></i> Recargar
+                    </a>
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#crearEntradaModal">
+                        <i class="bi bi-plus-circle"></i> Nueva Entrada
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle shadow-sm">
+            <thead class="table-dark text-center">
+                <tr>
+                    <th> </th>
+                    <th>Artículo</th>
+                    <th>Cantidad</th>
+                    <th>Medida</th>
+                    <th>Cantidad Unidades</th>
+                    <th>Monto Pagado</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody class="text-center">
+                @foreach (var e in Model)
+                {
+                    <tr>
+                        <td>@contador</td>
+                        <td>@e.Articulo?.Descripcion</td>
+                        <td>@e.Cantidad</td>
+                        <td>@e.Medida</td>
+                        <td>@e.CantidadUnidades</td>
+                        <td>@String.Format("{0:C0}", e.MontoPagado)</td>
+                        <td>@e.FechaEntrada?.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>
+                            @if (e.Estado == true)
+                            {
+                                <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger"><i class="bi bi-x-circle-fill"></i> Liquidado</span>
+                            }
+                        </td>
+                    </tr>
+                    contador++;
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Crear Entrada -->
+<div class="modal fade" id="crearEntradaModal" tabindex="-1" aria-labelledby="crearEntradaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0">
+            <form asp-action="Create" method="post">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i> Registrar Entrada</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Artículo:</label>
+                        <select name="IdArticulo" class="form-select" required>
+                            <option value="">Seleccione...</option>
+                            @foreach (var art in articulos)
+                            {
+                                <option value="@art.IdArticulo">@art.Descripcion</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cantidad:</label>
+                        <input type="number" name="Cantidad" class="form-control" required min="1" id="cantidad" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Medida:</label>
+                        <select name="Medida" class="form-select" id="medida" required>
+                            <option value="">Seleccione...</option>
+                            <option value="Unidad">Unidad</option>
+                            <option value="PorCajas">Por Cajas</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Monto Pagado:</label>
+                        <input type="text" name="MontoPagado" id="montoPagado" class="form-control text-end" required oninput="formatearDecimal(this)" />
+                    </div>
+                    <input type="hidden" name="CantidadUnidades" id="cantidadUnidades" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 🧮 Actualiza cantidad de unidades según la medida seleccionada
+        function actualizarCantidadUnidades() {
+            const medida = document.getElementById("medida").value;
+            const cantidad = parseInt(document.getElementById("cantidad").value) || 0;
+            const cantidadUnidades = document.getElementById("cantidadUnidades");
+
+            if (medida === "Unidad") {
+                cantidadUnidades.value = cantidad;
+            } else if (medida === "PorCajas") {
+                cantidadUnidades.value = cantidad * 38;
+            } else {
+                cantidadUnidades.value = 0;
+            }
+        }
+
+        document.getElementById("cantidad").addEventListener("input", actualizarCantidadUnidades);
+        document.getElementById("medida").addEventListener("change", actualizarCantidadUnidades);
+
+        // 💰 Formateo dinámico de MontoPagado con separadores
+        function formatearDecimal(input) {
+            // Remueve puntos existentes y cualquier carácter inválido
+            let valor = input.value.replace(/\./g, '').replace(/[^0-9,]/g, '');
+
+            // Divide parte entera y decimal
+            let partes = valor.split(',');
+
+            // Formatea parte entera
+            partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+            // Reconstruye el valor formateado
+            input.value = partes.length > 1 ? `${partes[0]},${partes[1]}` : partes[0];
+        }
+
+        // Evento de input para aplicar formato dinámico
+        const montoInput = document.getElementById("montoPagado");
+        if (montoInput) {
+            montoInput.addEventListener("input", function () {
+                formatearDecimal(this);
+            });
+        }
+
+        // 📨 Al enviar: limpia el formato para el backend
+        document.addEventListener('submit', function (e) {
+            const input = e.target.querySelector('input[name="MontoPagado"]');
+            if (input) {
+                input.value = input.value.replace(/\./g, '').replace(',', '.');
+            }
+        });
+
+        // 🟢 Mostrar modal si hubo error y se necesita reabrir
+        @if (ViewBag.AbrirModal == "true")
+        {
+                <text>
+                    const modal = new bootstrap.Modal(document.getElementById("crearEntradaModal"));
+                    modal.show();
+                </text>
+        }
+    </script>
+}
+

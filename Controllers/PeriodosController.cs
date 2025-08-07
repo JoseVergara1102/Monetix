@@ -21,7 +21,6 @@ namespace Monetix.Controllers
             return HttpContext.Session.GetInt32("idUsuario") != null;
         }
 
-        // Vista principal
         public async Task<IActionResult> Index(string busqueda, int? top)
         {
             if (!UsuarioAutenticado())
@@ -30,22 +29,16 @@ namespace Monetix.Controllers
             return await CargarListaView("Index", top, busqueda);
         }
 
-        // Crear nuevo periodo (desde modal)
         [HttpPost]
-        public async Task<IActionResult> Create(decimal cantidadInicial, DateTime fechaInicio, DateTime fechaFinal, int? top, string busqueda)
+        public async Task<IActionResult> Create(decimal cantidadInicial, int? top, string busqueda)
         {
             if (!UsuarioAutenticado())
                 return RedirectToAction("Login", "Auth");
 
-            // Validación 1: No se permite fechaInicio < hoy
-            if (fechaInicio.Date < DateTime.Today)
-            {
-                ViewBag.MensajeError = "La fecha de inicio no puede ser anterior a la fecha actual.";
-                return await CargarListaView("Index", top, busqueda);
-            }
+            DateTime fechaInicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            DateTime fechaFinal = fechaInicio.AddMonths(1).AddDays(-1);
 
-            // Validación 2: No se puede repetir periodo (NombrePeriodo: yyyyMM)
-            string nombrePeriodo = fechaInicio.ToString("yyyyMM", CultureInfo.InvariantCulture);
+            string nombrePeriodo = fechaInicio.ToString("yyyyMM");
             bool existe = await _context.Periodos.AnyAsync(p => p.NombrePeriodo == nombrePeriodo);
             if (existe)
             {
@@ -53,7 +46,6 @@ namespace Monetix.Controllers
                 return await CargarListaView("Index", top, busqueda);
             }
 
-            // Validación 3: Solo crear si todos los periodos están cerrados
             bool hayPeriodoAbierto = await _context.Periodos.AnyAsync(p => p.Estado == true);
             if (hayPeriodoAbierto)
             {
@@ -61,12 +53,10 @@ namespace Monetix.Controllers
                 return await CargarListaView("Index", top, busqueda);
             }
 
-            // Calcular cantidad prestada de préstamos en ese periodo
             decimal cantidadPrestada = await _context.Prestamos
                 .Where(p => p.Estado == true && p.FechaPrestamo >= fechaInicio && p.FechaPrestamo <= fechaFinal)
                 .SumAsync(p => (decimal?)p.Cantidad) ?? 0;
 
-            // Crear nuevo periodo
             var nuevo = new Periodo
             {
                 NombrePeriodo = nombrePeriodo,
@@ -74,7 +64,8 @@ namespace Monetix.Controllers
                 FechaFinal = fechaFinal,
                 CantidadInicial = cantidadInicial,
                 CantidadPrestada = cantidadPrestada,
-                Estado = true
+                Estado = true,
+                FechaCreacion = DateTime.Now
             };
 
             _context.Periodos.Add(nuevo);
@@ -84,7 +75,6 @@ namespace Monetix.Controllers
             return await CargarListaView("Index", top, busqueda);
         }
 
-        // Cerrar periodo
         [HttpPost]
         public async Task<IActionResult> Cerrar(int id, int? top, string busqueda)
         {
@@ -98,14 +88,36 @@ namespace Monetix.Controllers
                 return await CargarListaView("Index", top, busqueda);
             }
 
+            if (periodo.FechaFinal == null || DateTime.Now.Date < periodo.FechaFinal.Value.Date)
+            {
+                ViewBag.MensajeError = "No se puede cerrar el periodo antes de su fecha final.";
+                return await CargarListaView("Index", top, busqueda);
+            }
+
             periodo.Estado = false;
+            periodo.FechaCierre = DateTime.Now;
+
+            decimal totalIngresos = periodo.CantidadPrestada ?? 0;
+            decimal totalEgresos = 0; 
+            decimal balance = totalIngresos - totalEgresos;
+
+            var cierre = new CierrePeriodo
+            {
+                IdPeriodo = periodo.IdPeriodo,
+                TotalIngresos = totalIngresos,
+                TotalEgresos = totalEgresos,
+                Balance = balance,
+                Comentarios = "",
+                FechaCierre = periodo.FechaCierre
+            };
+
+            _context.CierrePeriodos.Add(cierre);
             await _context.SaveChangesAsync();
 
             ViewBag.MensajeExito = "Periodo cerrado correctamente.";
             return await CargarListaView("Index", top, busqueda);
         }
 
-        // Reabrir periodo (si todos están cerrados)
         [HttpPost]
         public async Task<IActionResult> Reabrir(int id, int? top, string busqueda)
         {
@@ -133,7 +145,22 @@ namespace Monetix.Controllers
             return await CargarListaView("Index", top, busqueda);
         }
 
-        // Método auxiliar para recargar la vista con filtros
+        [HttpGet]
+        public async Task<IActionResult> DetalleCierre(int id)
+        {
+            if (!UsuarioAutenticado())
+                return RedirectToAction("Login", "Auth");
+
+            var cierre = await _context.CierrePeriodos
+                .Include(c => c.Periodo)
+                .FirstOrDefaultAsync(c => c.IdPeriodo == id);
+
+            if (cierre == null)
+                return NotFound();
+
+            return PartialView("_DetalleCierre", cierre); // esto lo cargas como modal en Index
+        }
+
         private async Task<IActionResult> CargarListaView(string viewName, int? top, string busqueda)
         {
             int cantidad = top ?? 10;

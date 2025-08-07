@@ -1,0 +1,93 @@
+﻿@model List<Monetix.Models.Articulo>
+
+@{
+    ViewData["Title"] = "Gestión de Artículos";
+    string busqueda = ViewBag.Busqueda as string ?? "";
+    int top = ViewBag.Top ?? 6;
+}
+
+<div class="container mt-4">
+    <h3 class="mb-4 text-primary fw-bold"><i class="bi bi-box-seam me-2"></i> Gestión de Artículos</h3>
+
+    <form method="get" asp-action="Index" asp-controller="Articulos" class="row gy-2 gx-3 align-items-end mb-4">
+        <div class="col-md-4">
+            <label class="form-label">Buscar:</label>
+            <input type="text" name="busqueda" value="@busqueda" class="form-control" placeholder="Ej: Cerveza Poker" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Top:</label>
+            <input type="number" name="top" value="@top" min="1" class="form-control" />
+        </div>
+        <div class="col-md-6 text-end">
+            <button type="submit" class="btn btn-outline-primary me-2">
+                <i class="bi bi-search"></i> Buscar
+            </button>
+            <a asp-action="Index" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-clockwise"></i> Recargar
+            </a>
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#crearModal">
+                <i class="bi bi-plus-circle"></i> Nuevo Artículo
+            </button>
+        </div>
+    </form>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info text-center">No hay artículos registrados.</div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            @foreach (var a in Model)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 rounded-4">
+                        <div class="position-relative">
+                            <img src="~/img/articulos/@(a.Codigo?.ToLower()).png" class="card-img-top rounded-top-4" style="height: 200px; object-fit: cover;" alt="Imagen @(a.Descripcion)" />
+                            <span class="position-absolute top-0 end-0 m-2 badge rounded-pill bg-@(a.Estado == true ? "success" : "secondary") shadow">
+                                @(a.Estado == true ? "Activo" : "Inactivo")
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title fw-semibold text-dark">@a.Descripcion</h5>
+                            <p class="card-text mb-0">
+                                <i class="bi bi-upc me-1 text-muted"></i><strong>Código:</strong> @a.Codigo
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Modal Crear Artículo -->
+<div class="modal fade" id="crearModal" tabindex="-1" aria-labelledby="crearModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow border-0 rounded-4">
+            <form asp-action="Create" method="post">
+                <div class="modal-header bg-success text-white rounded-top-4">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i> Nuevo Artículo</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Código:</label>
+                        <input name="Codigo" class="form-control" required maxlength="10" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción:</label>
+                        <input name="Descripcion" class="form-control" required maxlength="50" />
+                    </div>
+                    @* Estado por defecto se asigna en el backend *@
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-success" type="submit">
+                        <i class="bi bi-check2-circle me-1"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

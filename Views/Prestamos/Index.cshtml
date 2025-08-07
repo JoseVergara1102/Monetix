@@ -191,7 +191,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Fecha Vencimiento</label>
-                            <input type="date" name="fechaVencimiento" class="form-control" required />
+                            <input disabled type="date" name="fechaVencimiento" class="form-control" required />
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Tipo de Plazo</label>
@@ -253,5 +253,34 @@
             document.getElementById("inputIdPrestamo").value = id;
             new bootstrap.Modal(document.getElementById('modalAmpliar')).show();
         }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const plazoSelect = document.querySelector("select[name='numCuotas']");
+            const fechaVencimientoInput = document.querySelector("input[name='fechaVencimiento']");
+
+            plazoSelect.addEventListener("change", function () {
+                const cuotas = parseInt(plazoSelect.value);
+
+                if (!isNaN(cuotas)) {
+                    const hoy = new Date();
+                    let nuevaFecha = new Date(hoy);
+
+                    // Si es plazo diario (30), sumamos días en lugar de meses
+                    if (cuotas === 30) {
+                        nuevaFecha.setDate(nuevaFecha.getDate() + cuotas);
+                    } else {
+                        nuevaFecha.setMonth(nuevaFecha.getMonth() + cuotas);
+                    }
+
+                    // Convertimos a yyyy-MM-dd
+                    const yyyy = nuevaFecha.getFullYear();
+                    const mm = String(nuevaFecha.getMonth() + 1).padStart(2, '0');
+                    const dd = String(nuevaFecha.getDate()).padStart(2, '0');
+                    const fechaFormateada = `${yyyy}-${mm}-${dd}`;
+
+                    fechaVencimientoInput.value = fechaFormateada;
+                }
+            });
+        });
     </script>
 }

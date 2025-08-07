@@ -1,0 +1,180 @@
+﻿@model List<Monetix.Models.Gasto>
+@{
+    ViewData["Title"] = "Gestión de Gastos";
+    var busqueda = ViewBag.Busqueda as string ?? "";
+    int top = ViewBag.Top ?? 10;
+    int contador = 1;
+    var balances = (ViewBag.BalancesPorPeriodo as List<Monetix.Models.BalancePorPeriodo>)
+                    ?.OrderByDescending(b => b.Periodo)
+                    .Take(3)
+                    .ToList();
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-primary fw-bold">
+            <i class="bi bi-cash-coin me-2"></i> Gestión de Gastos
+        </h3>
+    </div>
+
+    @if (ViewBag.MensajeExito != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @ViewBag.MensajeExito
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Columna principal (Listado de gastos) -->
+        <div class="col-md-9">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body">
+                    <form method="get" asp-controller="Gastos" asp-action="Index" class="row gy-2 gx-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label">Buscar descripción:</label>
+                            <input type="text" name="busqueda" value="@busqueda" class="form-control" placeholder="Ej: Mantenimiento" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Top:</label>
+                            <input type="number" name="top" value="@top" min="1" class="form-control" />
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button type="submit" class="btn btn-outline-primary me-2">
+                                <i class="bi bi-search"></i> Buscar
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary me-2">
+                                <i class="bi bi-arrow-clockwise"></i> Recargar
+                            </a>
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#crearModal">
+                                <i class="bi bi-plus-circle"></i> Nuevo Gasto
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="table-responsive mb-5">
+                <table class="table table-hover table-bordered align-middle shadow-sm">
+                    <thead class="table-dark text-center">
+                        <tr>
+                            <th> </th>
+                            <th>Descripción</th>
+                            <th>Cantidad</th>
+                            <th>Monto Gastado</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-center">
+                        @foreach (var gasto in Model)
+                        {
+                            <tr>
+                                <td>@contador</td>
+                                <td class="fw-semibold">@gasto.DescripcionGasto</td>
+                                <td>@gasto.Cantidad</td>
+                                <td class="text-danger fw-semibold">$@gasto.MontoGastado?.ToString("N0")</td>
+                                <td>@gasto.FechaGasto?.ToString("dd/MM/yyyy")</td>
+                            </tr>
+                            contador++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Columna lateral (Balance por periodo) -->
+        <div class="col-md-3">
+            @if (balances != null && balances.Any())
+            {
+                <div class="card shadow-sm border-0 mb-5">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0"><i class="bi bi-bar-chart-fill me-2"></i> Balance por Período</h6>
+                    </div>
+                    <div class="card-body p-2">
+                        <table class="table table-sm table-bordered text-center align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Periodo</th>
+                                    <th>Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var b in balances)
+                                {
+                                    var periodoTexto = DateTime.TryParseExact(b.Periodo.ToString(), "yyyyMM", null, System.Globalization.DateTimeStyles.None, out var fecha)
+                                    ? fecha.ToString("MMMM yyyy", new System.Globalization.CultureInfo("es-CO"))
+                                    : b.Periodo.ToString();
+
+                                    var color = b.Balance >= 0 ? "text-success fw-bold" : "text-danger fw-bold";
+
+                                    <tr>
+                                        <td class=" fw-semibold">@periodoTexto</td>
+                                        <td class="@color">$@b.Balance.ToString("N0")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crear Gasto -->
+<div class="modal fade" id="crearModal" tabindex="-1" aria-labelledby="crearModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0">
+            <form asp-action="Create" asp-controller="Gastos" method="post">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i> Registrar Gasto</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <input type="text" name="descripcionGasto" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cantidad</label>
+                        <input type="number" name="cantidad" class="form-control" min="1" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Monto Gastado</label>
+                        <input type="text" name="MontoGastado" id="montoGastado" class="form-control text-end" required oninput="formatearMoneda(this)" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fecha del Gasto</label>
+                        <input type="date" name="fechaGasto" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function formatearMoneda(input) {
+            let valor = input.value.replace(/\./g, '').replace(/[^\d]/g, '');
+            if (!valor) {
+                input.value = '';
+                return;
+            }
+            input.value = Number(valor).toLocaleString('es-CO');
+        }
+
+        document.addEventListener('submit', function (e) {
+            const inputs = e.target.querySelectorAll('input[name="MontoGastado"]');
+            inputs.forEach(input => {
+                input.value = input.value.replace(/\./g, '');
+            });
+        });
+    </script>
+}

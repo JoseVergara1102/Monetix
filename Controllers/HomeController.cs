@@ -15,12 +15,20 @@ namespace Monetix.Controllers
             _logger = logger;
         }
 
+        // Vista principal para módulo Monetix
         public IActionResult Index()
         {
-            // Obtener nombre del usuario desde la sesión (opcional)
             ViewBag.Usuario = HttpContext.Session.GetString("usuario") ?? "Invitado";
+            ViewBag.Modulo = "Monetix";
+            return View(); // Views/Home/Index.cshtml
+        }
 
-            return View(); // Vista protegida
+        // Vista principal para módulo MonetixBeer
+        public IActionResult HomeBeer()
+        {
+            ViewBag.Usuario = HttpContext.Session.GetString("usuario") ?? "Invitado";
+            ViewBag.Modulo = "MonetixBeer";
+            return View(); // Views/Home/HomeBeer.cshtml
         }
 
         public IActionResult Privacy()

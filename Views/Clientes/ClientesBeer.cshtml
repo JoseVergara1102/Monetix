@@ -1,0 +1,252 @@
+﻿@model List<Monetix.Models.ClienteBeer>
+
+@{
+    ViewData["Title"] = "Gestión de Clientes";
+    var busqueda = ViewBag.Busqueda as string ?? "";
+    int top = ViewBag.Top ?? 10;
+    int contador = 1;
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-primary fw-bold">
+            <i class="bi bi-people-fill me-2"></i> Gestión de Clientes
+        </h3>
+    </div>
+
+    @if (ViewBag.MensajeExito != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @ViewBag.MensajeExito
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    else if (ViewBag.MensajeError != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-x-circle-fill me-2"></i> @ViewBag.MensajeError
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" asp-controller="ClientesBeer" asp-action="ClientesBeer" class="row gy-2 gx-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Buscar por nombre:</label>
+                    <input type="text" name="busqueda" value="@busqueda" class="form-control" placeholder="Ej: Juan Pérez" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Top:</label>
+                    <input type="number" name="top" value="@top" min="1" class="form-control" />
+                </div>
+                <div class="col-md-6 text-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                    <a asp-action="ClientesBeer" asp-controller="ClientesBeer" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-clockwise"></i> Recargar
+                    </a>
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#crearModal">
+                        <i class="bi bi-plus-circle"></i> Nuevo Cliente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle shadow-sm">
+            <thead class="table-dark text-center">
+                <tr>
+                    <th> </th>
+                    <th>Nombre Completo</th>
+                    <th>Barrio</th>
+                    <th>Dirección</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="text-center">
+                @foreach (var c in Model)
+                {
+                    <tr>
+                        <td>@contador</td>
+                        <td>@($"{c.PrimerNom} {c.SegundoNom} {c.PrimerApe} {c.SegundoApe}")</td>
+                        <td>@c.Barrio?.Nombre</td>
+                        <td>@c.Direccion</td>
+                        <td>
+                            @if (c.Estado == true)
+                            {
+                                <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary"><i class="bi bi-x-circle-fill"></i> Inactivo</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="d-flex justify-content-center gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary" title="Editar"
+                                        onclick='editarCliente(@Html.Raw(Json.Serialize(c)))'>
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+
+                                @if (c.Estado == true)
+                                {
+                                    <form asp-action="Desactivar" method="post">
+                                        <input type="hidden" name="id" value="@c.IdCliente" />
+                                        <input type="hidden" name="top" value="@top" />
+                                        <input type="hidden" name="busqueda" value="@busqueda" />
+                                        <button type="submit" class="btn btn-sm btn-outline-warning"
+                                                onclick="return confirm('¿Desea desactivar este cliente?')">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-action="Activar" method="post">
+                                        <input type="hidden" name="id" value="@c.IdCliente" />
+                                        <input type="hidden" name="top" value="@top" />
+                                        <input type="hidden" name="busqueda" value="@busqueda" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success"
+                                                onclick="return confirm('¿Desea activar este cliente?')">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                    contador++;
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Crear Cliente -->
+<div class="modal fade" id="crearModal" tabindex="-1" aria-labelledby="crearModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0">
+            <form asp-action="Create" method="post">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i> Registrar Cliente</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Primer Nombre</label>
+                            <input type="text" name="PrimerNom" class="form-control" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Segundo Nombre</label>
+                            <input type="text" name="SegundoNom" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Primer Apellido</label>
+                            <input type="text" name="PrimerApe" class="form-control" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Segundo Apellido</label>
+                            <input type="text" name="SegundoApe" class="form-control" />
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Dirección</label>
+                            <input type="text" name="Direccion" class="form-control" />
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Barrio</label>
+                            <select name="IdBarrio" class="form-select" required>
+                                <option value="">Seleccione</option>
+                                @foreach (var barrio in ViewBag.Barrios as List<Monetix.Models.Barrio>)
+                                {
+                                    <option value="@barrio.IdBarrio">@barrio.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Cliente -->
+<div class="modal fade" id="editarModal" tabindex="-1" aria-labelledby="editarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0">
+            <form asp-action="Edit" method="post">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i> Editar Cliente</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="IdCliente" id="edit-idCliente" />
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Primer Nombre</label>
+                            <input type="text" name="PrimerNom" id="edit-primerNom" class="form-control" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Segundo Nombre</label>
+                            <input type="text" name="SegundoNom" id="edit-segundoNom" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Primer Apellido</label>
+                            <input type="text" name="PrimerApe" id="edit-primerApe" class="form-control" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Segundo Apellido</label>
+                            <input type="text" name="SegundoApe" id="edit-segundoApe" class="form-control" />
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Dirección</label>
+                            <input type="text" name="Direccion" id="edit-direccion" class="form-control" />
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Barrio</label>
+                            <select name="IdBarrio" id="edit-idBarrio" class="form-select" required>
+                                <option value="">Seleccione</option>
+                                @foreach (var barrio in ViewBag.Barrios as List<Monetix.Models.Barrio>)
+                                {
+                                    <option value="@barrio.IdBarrio">@barrio.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function editarCliente(c) {
+            document.getElementById("edit-idCliente").value = c.idCliente;
+            document.getElementById("edit-primerNom").value = c.primerNom || "";
+            document.getElementById("edit-segundoNom").value = c.segundoNom || "";
+            document.getElementById("edit-primerApe").value = c.primerApe || "";
+            document.getElementById("edit-segundoApe").value = c.segundoApe || "";
+            document.getElementById("edit-direccion").value = c.direccion || "";
+            document.getElementById("edit-idBarrio").value = c.idBarrio || "";
+
+            new bootstrap.Modal(document.getElementById("editarModal")).show();
+        }
+    </script>
+}

@@ -29,13 +29,14 @@ namespace Monetix.Controllers
             return View();
         }
 
-        // ========== LOGIN (POST) ==========
+        // ========== LOGIN (POST) CON MÓDULO ==========
         [HttpPost]
-        public async Task<IActionResult> Login(string usuario, string pass)
+        public async Task<IActionResult> Login(string usuario, string pass, string modulo)
         {
-            if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(pass))
+            if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(pass) || string.IsNullOrWhiteSpace(modulo))
             {
-                ViewBag.Error = "Debe ingresar usuario y contraseña.";
+                ViewBag.Error = "Debe ingresar usuario, contraseña y seleccionar un módulo.";
+                ViewBag.Modulo = modulo;
                 CargarRolesActivos();
                 return View();
             }
@@ -47,6 +48,7 @@ namespace Monetix.Controllers
             if (usuarioEncontrado == null)
             {
                 ViewBag.Error = "Credenciales inválidas.";
+                ViewBag.Modulo = modulo;
                 CargarRolesActivos();
                 return View();
             }
@@ -54,6 +56,7 @@ namespace Monetix.Controllers
             if (!usuarioEncontrado.Estado)
             {
                 ViewBag.Error = "Usuario inactivo.";
+                ViewBag.Modulo = modulo;
                 CargarRolesActivos();
                 return View();
             }
@@ -61,6 +64,7 @@ namespace Monetix.Controllers
             if (!BCrypt.Net.BCrypt.Verify(pass, usuarioEncontrado.Contrasena))
             {
                 ViewBag.Error = "Credenciales inválidas.";
+                ViewBag.Modulo = modulo;
                 CargarRolesActivos();
                 return View();
             }
@@ -69,6 +73,7 @@ namespace Monetix.Controllers
             HttpContext.Session.SetInt32("idUsuario", usuarioEncontrado.IdUsuario);
             HttpContext.Session.SetInt32("idRol", usuarioEncontrado.IdRol);
             HttpContext.Session.SetString("usuario", usuarioEncontrado.UsuarioNombre);
+            HttpContext.Session.SetString("modulo", modulo); // Guardamos también el módulo
 
             // Crear claims
             var claims = new List<Claim>
@@ -76,7 +81,8 @@ namespace Monetix.Controllers
         new Claim(ClaimTypes.Name, usuarioEncontrado.UsuarioNombre),
         new Claim(ClaimTypes.Role, usuarioEncontrado.Rol.Nombre),
         new Claim("idUsuario", usuarioEncontrado.IdUsuario.ToString()),
-        new Claim("idRol", usuarioEncontrado.IdRol.ToString())
+        new Claim("idRol", usuarioEncontrado.IdRol.ToString()),
+        new Claim("modulo", modulo)
     };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -91,7 +97,15 @@ namespace Monetix.Controllers
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
 
-            return RedirectToAction("Index", "Home");
+            // Redireccionar según el módulo seleccionado
+            if (modulo == "MonetixBeer")
+            {
+                return RedirectToAction("HomeBeer", "Home");
+            }
+            else
+            {
+                return RedirectToAction("Index", "Home");
+            }
         }
 
         // ========== REGISTRO ==========

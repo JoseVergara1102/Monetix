@@ -1,0 +1,110 @@
+﻿@model List<Monetix.Models.BalanceArticuloViewModel>
+
+@{
+    ViewData["Title"] = "Balance de Artículos";
+    var busqueda = ViewBag.Busqueda as string ?? "";
+    int top = ViewBag.Top ?? 10;
+    int? anio = ViewBag.Anio;
+    int? mes = ViewBag.Mes;
+    int contador = 1;
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-primary fw-bold">
+            <i class="bi bi-bar-chart-line"></i> Balance de Artículos
+        </h3>
+    </div>
+
+    @if (TempData["success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    else if (TempData["error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-x-circle-fill me-2"></i> @TempData["error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" asp-controller="VistaBalanceArticulos" asp-action="Index" class="row gy-2 gx-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Buscar por código o descripción:</label>
+                    <input type="text" name="busqueda" value="@busqueda" class="form-control" placeholder="Ej: Tornillo, 123ABC" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Top:</label>
+                    <input type="number" name="top" value="@top" min="1" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Año:</label>
+                    <input type="number" name="anio" value="@anio" class="form-control" placeholder="Ej: 2025" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Mes:</label>
+                    <input type="number" name="mes" value="@mes" class="form-control" placeholder="Ej: 8" min="1" max="12" />
+                </div>
+                <div class="col-md-2 text-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-warning text-center">
+            <i class="bi bi-info-circle"></i> No hay datos de balance para mostrar.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle shadow-sm">
+                <thead class="table-dark text-center">
+                    <tr>
+                        <th> </th>
+                        <th>Artículo</th>
+                        <th>Código</th>
+                        <th>Periodo</th>
+                        <th>Entradas</th>
+                        <th>Salidas</th>
+                        <th>Vendido</th>
+                        <th>Comprado</th>
+                        <th>Ganancia</th>
+                    </tr>
+                </thead>
+                <tbody class="text-center">
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@contador</td>
+                            <td class="fw-semibold">@item.Descripcion</td>
+                            <td>@item.Codigo</td>
+                            <td>@item.Periodo</td>
+                            <td>@item.TotalEntradas</td>
+                            <td>@item.TotalSalidas</td>
+                            <td>@item.TotalVendido.ToString("C")</td>
+                            <td>@item.TotalComprado.ToString("C")</td>
+                            <td class="fw-bold @(item.GananciaBruta >= 0 ? "text-success" : "text-danger")">
+                                @item.GananciaBruta.ToString("C")
+                            </td>
+                        </tr>
+                        contador++;
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

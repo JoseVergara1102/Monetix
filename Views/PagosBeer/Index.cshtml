@@ -1,0 +1,114 @@
+﻿@model List<Monetix.Models.PagoBeer>
+@using Monetix.Models
+@{
+    ViewData["Title"] = "Gestión de Pagos";
+    string busqueda = ViewBag.Busqueda as string ?? "";
+    int top = ViewBag.Top ?? 10;
+    int contador = 1;
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-primary fw-bold">
+            <i class="bi bi-credit-card me-2"></i> Gestión de Pagos
+        </h3>
+    </div>
+
+    @if (TempData["success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    else if (TempData["error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-x-circle-fill me-2"></i> @TempData["error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" asp-action="Index" asp-controller="PagosBeer" class="row gy-2 gx-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Buscar por recibo o cliente:</label>
+                    <input type="text" name="busqueda" value="@busqueda" class="form-control" placeholder="Ej: #12345 o Juan" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Top:</label>
+                    <input type="number" name="top" value="@top" min="1" class="form-control" />
+                </div>
+                <div class="col-md-6 text-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                    <a asp-action="Index" asp-controller="PagosBeer" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i> Recargar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-circle me-2"></i> No se encontraron pagos registrados.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle shadow-sm">
+                <thead class="table-dark text-center">
+                    <tr>
+                        <th> </th>
+                        <th>Número Recibo</th>
+                        <th>Cliente</th>
+                        <th>Pagado</th>
+                        <th>Debe</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="text-center">
+                    @foreach (var p in Model)
+                    {
+                        <tr>
+                            <td>@contador</td>
+                            <td>@p.NumRecibo</td>
+                            <td>
+                                @p.Salida?.Cliente?.PrimerNom @p.Salida?.Cliente?.SegundoNom
+                                @p.Salida?.Cliente?.PrimerApe @p.Salida?.Cliente?.SegundoApe
+                            </td>
+                            <td>$@($"{p.CantidadPagada:N2}")</td>
+                            <td>$@($"{p.CantidadDebe:N2}")</td>
+                            <td>
+                                @if (p.Estado == true)
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle-fill"></i> Pagado
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-x-circle-fill"></i> Debe
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="Imprimir" asp-route-id="@p.IdPago" class="btn btn-sm btn-outline-primary" title="Imprimir Recibo">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        contador++;
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

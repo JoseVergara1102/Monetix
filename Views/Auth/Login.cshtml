@@ -1,6 +1,6 @@
 ﻿@{
     ViewData["Title"] = "Iniciar sesión";
-    ViewData["OcultarHeaderFooter"] = true; // Oculta header/footer desde Layout
+    ViewData["OcultarHeaderFooter"] = true;
 }
 
 <style>
@@ -14,15 +14,34 @@
     }
 
     .card {
-        backdrop-filter: blur(8px); /* efecto vidrio */
-        background-color: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(8px);
+        background-color: rgba(255, 255, 255, 0.9);
         border-radius: 1rem;
     }
+
+    .modulo-option {
+        cursor: pointer;
+        border: 2px solid transparent;
+        border-radius: 0.75rem;
+        transition: all 0.2s ease;
+    }
+
+        .modulo-option:hover {
+            border-color: #212529;
+            background-color: #dee2e6; 
+            color: #000;
+        }
+
+        .modulo-option.selected {
+            border-color: #212529;
+            background-color: #ced4da; 
+            color: #000;
+        }
 </style>
 
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-5">
+        <div class="col-md-6 col-lg-5">
             <div class="card shadow border-0">
                 <div class="card-header bg-dark text-white text-center rounded-top">
                     <h4 class="mb-0">
@@ -50,12 +69,32 @@
                     <form asp-action="Login" method="post" novalidate>
                         <div class="mb-3">
                             <label for="usuario" class="form-label">Usuario</label>
-                            <input type="text" class="form-control" id="usuario" name="usuario" placeholder="Ingrese su usuario" required autocomplete="username" />
+                            <input type="text" class="form-control" id="usuario" name="usuario" placeholder="Ingrese su usuario" required />
                         </div>
 
                         <div class="mb-3">
                             <label for="pass" class="form-label">Contraseña</label>
-                            <input type="password" class="form-control" id="pass" name="pass" placeholder="Ingrese su contraseña" required autocomplete="current-password" />
+                            <input type="password" class="form-control" id="pass" name="pass" placeholder="Ingrese su contraseña" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Seleccione un módulo</label>
+                            <input type="hidden" id="modulo" name="modulo" value="@ViewBag.Modulo" />
+
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="p-3 border text-center modulo-option @(ViewBag.Modulo == "Monetix" ? "selected" : "")" data-modulo="Monetix">
+                                        <i class="bi bi-cash-coin fs-3 d-block mb-1"></i>
+                                        Monetix
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-3 border text-center modulo-option @(ViewBag.Modulo == "MonetixBeer" ? "selected" : "")" data-modulo="MonetixBeer">
+                                        <i class="bi bi-cup-straw fs-3 d-block mb-1"></i>
+                                        MonetixBeer
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="d-grid gap-2">
@@ -73,7 +112,7 @@
     </div>
 </div>
 
-<!-- MODAL REGISTRO DE USUARIO -->
+<!-- Modal Registro -->
 <div class="modal fade" id="modalRegistro" tabindex="-1" aria-labelledby="modalRegistroLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content shadow border-0">
@@ -127,3 +166,16 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.modulo-option').forEach(opt => {
+            opt.addEventListener('click', function () {
+                document.getElementById('modulo').value = this.dataset.modulo;
+
+                document.querySelectorAll('.modulo-option').forEach(o => o.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+    </script>
+}

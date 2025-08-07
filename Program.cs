@@ -18,9 +18,13 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-// Configurar DbContext
+// Configurar DbContext - MONETIX PRESTAMOS
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("MonetixContabilidad")));
+
+//Configurar DbContext - MONETIX INVENTARIO
+builder.Services.AddDbContext<InventarioDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("MonetixInventario")));
 
 // Configurar autenticación con cookies
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

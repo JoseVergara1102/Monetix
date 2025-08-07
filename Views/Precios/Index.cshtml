@@ -1,0 +1,233 @@
+﻿@model List<Monetix.Models.Precio>
+@using Monetix.Models
+@{
+    ViewData["Title"] = "Gestión de Precios";
+    var busqueda = ViewBag.Busqueda as string ?? "";
+    int top = ViewBag.Top ?? 10;
+    var articulos = ViewBag.Articulos as List<Articulo>;
+    int contador = 1;
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-primary fw-bold">
+            <i class="bi bi-tag-fill me-2"></i> Gestión de Precios
+        </h3>
+    </div>
+
+    @if (TempData["success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    else if (TempData["error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-x-circle-fill me-2"></i> @TempData["error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" asp-controller="Precios" asp-action="Index" class="row gy-2 gx-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Buscar por artículo:</label>
+                    <input type="text" name="busqueda" value="@busqueda" class="form-control" placeholder="Ej: Arroz, Pan, etc." />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Top:</label>
+                    <input type="number" name="top" value="@top" min="1" class="form-control" />
+                </div>
+                <div class="col-md-6 text-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-clockwise"></i> Recargar
+                    </a>
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#crearModal">
+                        <i class="bi bi-plus-circle"></i> Nuevo Precio
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle shadow-sm">
+            <thead class="table-dark text-center">
+                <tr>
+                    <th> </th>
+                    <th>Artículo</th>
+                    <th>Valor</th>
+                    <th>Medida</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="text-center">
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td>@contador</td>
+                        <td>@p.Articulo?.Descripcion</td>
+                        <td>$ @String.Format("{0:N0}", p.PrecioValor)</td>
+                        <td>@p.Medida</td> 
+                        <td>
+                            @if (p.Estado == true)
+                            {
+                                <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary"><i class="bi bi-x-circle-fill"></i> Inactivo</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="d-flex justify-content-center gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary" title="Editar"
+                                        onclick='editarPrecio(@Html.Raw(Json.Serialize(p)))'>
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <form asp-action="CambiarEstado" asp-controller="Precios" method="post"
+                                      onsubmit="return confirm('¿Desea cambiar el estado de este precio?')">
+                                    <input type="hidden" name="id" value="@p.IdPrecio" />
+                                    <input type="hidden" name="top" value="@top" />
+                                    <input type="hidden" name="busqueda" value="@busqueda" />
+                                    <button type="submit" class="btn btn-sm @(p.Estado == true ? "btn-outline-warning" : "btn-outline-success")"
+                                            title="@(p.Estado == true ? "Desactivar" : "Activar")">
+                                        <i class="bi @(p.Estado == true ? "bi-x-circle" : "bi-check-circle")"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    contador++;
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Crear Precio -->
+<div class="modal fade" id="crearModal" tabindex="-1" aria-labelledby="crearModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0">
+            <form asp-action="Create" asp-controller="Precios" method="post">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i> Registrar Precio</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Artículo</label>
+                        <select name="IdArticulo" class="form-select" required>
+                            <option selected disabled value="">Seleccione...</option>
+                            @foreach (var art in articulos)
+                            {
+                                <option value="@art.IdArticulo">@art.Descripcion</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Precio</label>
+                        <input type="text" name="PrecioValor" id="precio" class="form-control text-end" required oninput="formatearNumero(this)" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Medida</label>
+                        <select name="Medida" class="form-select" required>
+                            <option selected disabled value="">Seleccione...</option>
+                            <option value="Unidad">Unidad</option>
+                            <option value="PorCajas">PorCajas</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Precio -->
+<div class="modal fade" id="editarModal" tabindex="-1" aria-labelledby="editarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0">
+            <form asp-action="Edit" asp-controller="Precios" method="post">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i> Editar Precio</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="IdPrecio" id="edit-id" />
+                    <div class="mb-3">
+                        <label class="form-label">Artículo</label>
+                        <select name="IdArticulo" id="edit-articulo" class="form-select" required>
+                            <option selected disabled value="">Seleccione...</option>
+                            @foreach (var art in articulos)
+                            {
+                                <option value="@art.IdArticulo">@art.Descripcion</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Precio</label>
+                        <input type="text" name="PrecioValor" id="edit-precio" class="form-control text-end" required oninput="formatearNumero(this)" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Medida</label>
+                        <select name="Medida" id="edit-medida" class="form-select" required>
+                            <option selected disabled value="">Seleccione...</option>
+                            <option value="Unidad">Unidad</option>
+                            <option value="PorCajas">PorCajas</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function editarPrecio(precio) {
+            document.getElementById("edit-id").value = precio.idPrecio;
+            document.getElementById("edit-articulo").value = precio.idArticulo;
+
+            let valor = precio.precioValor?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            document.getElementById("edit-precio").value = valor ?? "";
+
+            new bootstrap.Modal(document.getElementById("editarModal")).show();
+        }
+
+        function formatearNumero(input) {
+            let valor = input.value.replace(/\./g, '').replace(/[^\d]/g, '');
+            if (!valor) {
+                input.value = '';
+                return;
+            }
+            input.value = Number(valor).toLocaleString('es-CO');
+        }
+
+        // Al enviar el formulario, quitar los puntos para que el valor se procese correctamente
+        document.addEventListener('submit', function (e) {
+            const inputs = e.target.querySelectorAll('input[name="PrecioValor"]');
+            inputs.forEach(input => {
+                input.value = input.value.replace(/\./g, '');
+            });
+        });
+    </script>
+}
